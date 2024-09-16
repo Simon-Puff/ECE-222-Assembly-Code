@@ -1,0 +1,666 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000         ;*------------------------------------------------------
+                       ----------------------
+    2 00000000         ;* Name:    Lab_2_program.s 
+    3 00000000         ;* Purpose: This code template is for Lab 2
+    4 00000000         ;* Author: Eric Praetzel and Rasoul Keshavarzi 
+    5 00000000         ;*------------------------------------------------------
+                       ----------------------*/
+    6 00000000                 THUMB                        ; Declare THUMB ins
+                                                            truction set 
+    7 00000000                 AREA             My_code, CODE, READONLY ; 
+    8 00000000                 EXPORT           __MAIN      ; Label __MAIN is u
+                                                            sed externally q
+    9 00000000                 ENTRY
+   10 00000000         __MAIN
+   11 00000000         ; The following lines are similar to Lab-1 but use an ad
+                       dress, in r4, to make it easier.
+   12 00000000         ; Note that one still needs to use the offsets of 0x20 a
+                       nd 0x40 to access the ports
+   13 00000000         ;
+   14 00000000 F04F 0A00       MOV              R10,#0      ;Universal Register
+                                                            , used to avoid int
+                                                            roducing delay when
+                                                             starting the progr
+                                                            am
+   15 00000004         ; Turn off all LEDs 
+   16 00000004 F44F 4240       MOV              R2, #0xC000
+   17 00000008 F04F 4330       MOV              R3, #0xB0000000
+   18 0000000C F04F 0400       MOV              R4, #0x0
+   19 00000010 F2C2 0409       MOVT             R4, #0x2009
+   20 00000014 4414            ADD              R4, R4, R2  ; 0x2009C000 - the 
+                                                            base address for de
+                                                            aling with the port
+                                                            s
+   21 00000016 6223            STR              R3, [r4, #0x20] ; Turn off the 
+                                                            three LEDs on port 
+                                                            1
+   22 00000018 F04F 037C       MOV              R3, #0x0000007C
+   23 0000001C 6423            STR              R3, [R4, #0x40] ; Turn off five
+                                                             LEDs on port 2 
+   24 0000001E         
+   25 0000001E         ResetLUT
+   26 0000001E F1BA 0F00       CMP              R10, #0     ; This only work wh
+                                                            en the first time, 
+                                                            afterwards R10 will
+                                                             be incremented by 
+                                                            1 each time,
+   27 00000022         ; it never equal to 0 anymore, which means introducing d
+                       elay
+   28 00000022 F8DF E0E4       LDR              LR,=Return_LED_RESET ; I put th
+                                                            e return address to
+                                                             LR, and inside the
+                                                             subroutine, the la
+                                                            st instruction will
+                                                             always be BX LR
+   29 00000026 F000 F83F       BL               LED_OFF     ; Branch to LED_OFF
+                                                            
+   30 0000002A         Return_LED_RESET
+   31 0000002A F04F 0B04       MOV              R11, #4     ; Since this is whe
+                                                            re we resets the ch
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+                                                            ar array, we need t
+                                                            o introduce a 4 tim
+                                                            e delay
+   32 0000002E         ; R11 is universal register for delay repeat times
+   33 0000002E F8DF E0DC       LDR              LR, =Return_Reset ; same as abo
+                                                            ve, save the return
+                                                             address to the LR
+   34 00000032 D13D            BNE              DELAY       ; 
+   35 00000034         Return_Reset
+   36 00000034 4D36            LDR              R5, =InputLUT ; assign R5 to th
+                                                            e address at label 
+                                                            LUT
+   37 00000036         
+   38 00000036         ; Start processing the characters
+   39 00000036         
+   40 00000036         NextChar
+   41 00000036 F1BA 0F00       CMP              R10, #0     ; Recall that R10 i
+                                                            s execution time co
+                                                            unter
+   42 0000003A F8DF E0D8       LDR              LR,=Return_LED_CHAR
+   43 0000003E F000 F833       BL               LED_OFF
+   44 00000042         Return_LED_CHAR
+   45 00000042 F04F 0B03       MOV              R11, #3     ; Makes delay repea
+                                                            t 3 times
+   46 00000046 F8DF E0D0       LDR              LR, =Return_Next
+   47 0000004A D131            BNE              DELAY
+   48 0000004C         Return_Next
+   49 0000004C F10A 0A01       ADD              R10, #1     ; this increments t
+                                                            he pointer by one, 
+                                                            why one? because ea
+                                                            ch morse pattern is
+                                                             a word, and a word
+                                                             is 8-bit or 1 byte
+                                                            
+   50 00000050 7828            LDRB             R0, [R5]    ; Read a character 
+                                                            to convert to Morse
+                                                             Code
+   51 00000052 F105 0501       ADD              R5, #1      ; point to next val
+                                                            ue for number of de
+                                                            lays, jump by 1 byt
+                                                            e
+   52 00000056 F090 0F00       TEQ              R0, #0      ; If we hit 0 (null
+                                                             at end of the stri
+                                                            ng) then reset to t
+                                                            he start of lookup 
+                                                            table
+   53 0000005A D104            BNE              ProcessChar ; If we have a char
+                                                            acter process it
+   54 0000005C         
+   55 0000005C F04F 0004       MOV              R0, #4      ; delay 4 extra spa
+                                                            ces (7 total) betwe
+                                                            en words
+   56 00000060 F000 F826       BL               DELAY
+   57 00000064 D0DB            BEQ              ResetLUT    ; if equal to 0, wh
+                                                            ich means we have g
+                                                            one through all cha
+                                                            racters, it will re
+                                                            turn to resetLUT to
+                                                             reset the pointer
+
+
+
+ARM Macro Assembler    Page 3 
+
+
+   58 00000066         
+   59 00000066 F000 F80D 
+                       ProcessChar
+                               BL               CHAR2MORSE  ; convert ASCII to 
+                                                            Morse pattern in R1
+                                                              
+   60 0000006A         
+   61 0000006A         ;*******************************************************
+                       ********************************************************
+                       **********************************
+   62 0000006A         ;*****************  These are alternate methods to read 
+                       the bits in the Morse code LUT. You can use them or not 
+                       **********************************
+   63 0000006A         ;*******************************************************
+                       ********************************************************
+                       ********************************** 
+   64 0000006A         
+   65 0000006A         ; This is a different way to read the bits in the Morse 
+                       Code LUT than is in the lab manual.
+   66 0000006A         ;  Choose whichever one you like.
+   67 0000006A         ; 
+   68 0000006A         ; First - loop until we have a 1 bit to send  (no code p
+                       rovided)
+   69 0000006A         
+   70 0000006A         
+   71 0000006A         LOOP_CHAR
+   72 0000006A 0049            LSLS             R1, #1      ; left shift by 1, 
+                                                            if a carry out happ
+                                                            en, PSR flag will b
+                                                            e updated
+   73 0000006C F8DF E0AC       LDR              LR, =Return_CARRY
+   74 00000070 D214            BCS              LED_ON      ;turn on the LED if
+                                                             carry out is set
+   75 00000072 D319            BCC              LED_OFF     ;turn off the LED i
+                                                            f carry out is clea
+                                                            r
+   76 00000074         Return_CARRY
+   77 00000074 F04F 0B01       MOV              R11, #1     ; Set the delay rep
+                                                            eat time by 1, repr
+                                                            esenting one dot or
+                                                             dash
+   78 00000078 F000 F81A       BL               DELAY
+   79 0000007C F091 0F00       TEQ              R1, #0      ; test if the regis
+                                                            ter is 0, which mea
+                                                            ns we already have 
+                                                            all bits being exec
+                                                            uted
+   80 00000080 D1F3            BNE              LOOP_CHAR   ; If not equal to, 
+                                                            branch back to this
+                                                             loop to execute th
+                                                            e next char again
+   81 00000082 D0D8            BEQ              NextChar    ; If equal to 0, re
+                                                            quest another char
+   82 00000084         ;
+   83 00000084         ; This is confusing as we're shifting a 32-bit value lef
+                       t, but the data is ONLY in the lowest 16 bits, so test s
+                       tarting at bit 15 for 1 or 0
+   84 00000084         ; Then loop thru all of the data bits:
+   85 00000084         ;
+
+
+
+ARM Macro Assembler    Page 4 
+
+
+   86 00000084         ;  MOV  R6, #0x8000 ; Init R6 with the value for the bit
+                       , 15th, which we wish to test
+   87 00000084         ;  LSL  R1, R1, #1 ; shift R1 left by 1, store in R1
+   88 00000084         ;  ANDS  R7, R1, R6 ; R7 gets R1 AND R6, Zero bit gets s
+                       et telling us if the bit is 0 or 1
+   89 00000084         ;  BEQ  ; branch somewhere it's zero
+   90 00000084         ;  BNE  ; branch somewhere - it's not zero
+   91 00000084         ;
+   92 00000084         ;  ....  lots of code
+   93 00000084         ;  B   somewhere in your code!  ; This is the end of the
+                        main program 
+   94 00000084         ;
+   95 00000084         ; Alternate Method #2
+   96 00000084         ; Shifting the data left - makes you walk thru it to the
+                        right.  You may find this confusing!
+   97 00000084         ; Instead of shifting data - shift the masking pattern. 
+                        Consider this and you may find that
+   98 00000084         ;   there is a much easier way to detect that all data h
+                       as been dealt with.
+   99 00000084         ;
+  100 00000084         ;  LSR  R6, #1  ; shift the mask 1 bit to the right
+  101 00000084         ;  ANDS  R7, R1, R6 ; R7 gets R1 AND R6, Zero bit gets s
+                       et telling us if the bit is 0 or 1
+  102 00000084         ;
+  103 00000084         ;
+  104 00000084         ; Alternate Method #3
+  105 00000084         ; All of the above methods do not use the shift operatio
+                       n properly.
+  106 00000084         ; In the shift operation the bit which is being lost, or
+                        pushed off of the register,
+  107 00000084         ; "falls" into the C flag - then one can BCC (Branch Car
+                       ry Clear) or BCS (Branch Carry Set)
+  108 00000084         ; This method works very well when coupled with an instr
+                       uction which counts the number 
+  109 00000084         ;  of leading zeros (CLZ) and a shift left operation to 
+                       remove those leading zeros.
+  110 00000084         
+  111 00000084         ;*******************************************************
+                       ********************************************************
+                       **********************************
+  112 00000084         ;
+  113 00000084         ;
+  114 00000084         ; Subroutines
+  115 00000084         ;
+  116 00000084         ;   convert ASCII character to Morse pattern
+  117 00000084         ;   pass ASCII character in R0, output in R1
+  118 00000084         ;   index into MorseLuT must be by steps of 2 bytes
+  119 00000084         CHAR2MORSE
+  120 00000084 B500            STMFD            R13!,{R14}  ; push Link Registe
+                                                            r (return address) 
+                                                            on stack
+  121 00000086 4F26            LDR              R7, =MorseLUT
+  122 00000088         ;
+  123 00000088         ;... add code here to convert the ASCII to an index (sub
+                       tract 41) and lookup the Morse patter in the Lookup Tabl
+                       e
+  124 00000088 F1A0 0041       SUB              R0, #0x41   ; Sub by 41
+  125 0000008C 4400            ADD              R0, R0      ; Multiply by 2
+  126 0000008E 4407            ADD              R7, R0      ; Add the offset
+
+
+
+ARM Macro Assembler    Page 5 
+
+
+  127 00000090 8839            LDRH             R1, [R7]    ; Load the morse pa
+                                                            ttern into R1, only
+                                                             the half matters s
+                                                            o we loaded half
+  128 00000092 FAB1 F281       CLZ              R2, R1      ; Count leading 0s 
+                                                            and store the count
+                                                             into R2
+  129 00000096 FA01 F102       LSL              R1, R1, R2  ; Logic shift left 
+                                                            several bits, the n
+                                                            umber of bits is st
+                                                            ored in R2, making 
+                                                            the leading (MSB) 1
+                                                            
+  130 0000009A         ;
+  131 0000009A BD00            LDMFD            R13!,{R15}  ; restore LR to R15
+                                                             the Program Counte
+                                                            r to return
+  132 0000009C         
+  133 0000009C         
+  134 0000009C         ; Turn the LED on, but deal with the stack in a simpler 
+                       way
+  135 0000009C         ; NOTE: This method of returning from subroutine (BX  LR
+                       ) does NOT work if subroutines are nested!!
+  136 0000009C         ;
+  137 0000009C         LED_ON
+  138 0000009C B418            push             {r3-r4}     ; preserve R3 and R
+                                                            4 on the R13 stack
+  139 0000009E BC18            pop              {r3-r4}     ; r3 and r4 is not 
+                                                            used for any other 
+                                                            purposes
+  140 000000A0         ;... insert your code here
+  141 000000A0 F04F 4320       MOV              R3, #0xA0000000 ; the number wh
+                                                            ich represents on
+  142 000000A4 6223            STR              R3,[R4, #0x20]
+  143 000000A6         ;
+  144 000000A6 4770            BX               LR          ; branch to the add
+                                                            ress in the Link Re
+                                                            gister.  Ie return 
+                                                            to the caller
+  145 000000A8         
+  146 000000A8         ; Turn the LED off, but deal with the stack in the prope
+                       r way
+  147 000000A8         ; the Link register gets pushed onto the stack so that s
+                       ubroutines can be nested
+  148 000000A8         ;
+  149 000000A8         LED_OFF
+  150 000000A8         ;STMFD  R13!,{R3, R14} ; push R3 and Link Register (retu
+                       rn address) on stack
+  151 000000A8         ;... insert your code here
+  152 000000A8 F04F 4330       MOV              R3, #0xB0000000
+  153 000000AC 6223            STR              R3,[R4,#0x20]
+  154 000000AE 4770            BX               LR          ; branch to the add
+                                                            ress in the Link Re
+                                                            gister.  Ie return 
+                                                            to the caller
+  155 000000B0         ;LDMFD  R13!,{R3, R15} ; restore R3 and LR to R15 the Pr
+                       ogram Counter to return
+  156 000000B0         
+  157 000000B0         ; Delay 500ms * R0 times
+
+
+
+ARM Macro Assembler    Page 6 
+
+
+  158 000000B0         ; Use the delay loop from Lab-1 but loop R0 times around
+                       
+  159 000000B0         ;
+  160 000000B0         DELAY
+  161 000000B0         ;STMFD  R13!,{R2, R14}
+  162 000000B0 F1BB 0F00       CMP              R11, #0     ; Recall R11 is the
+                                                             universal counter,
+                                                             since this is a lo
+                                                            oping function, I p
+                                                            ut the compare here
+                                                            
+  163 000000B4 D009            BEQ              Return_Function ; This links to
+                                                             a external label w
+                                                            hich helps to retur
+                                                            n to the location w
+                                                            here delay is calle
+                                                            d
+  164 000000B6         ; by doing so we can make conditional return will enjoyi
+                       ng the simplicity of BX LR
+  165 000000B6 F1BB 0B01       SUBS             R11, #1     ; Sub by 1, keeping
+                                                             the counter in tra
+                                                            ck
+  166 000000BA         ;MOV   R8, #1  ; debugg code
+  167 000000BA F642 482A       MOV              R8, #0x2C2A ; Initialized R0 lo
+                                                            wer word for countd
+                                                            own ( countdown # i
+                                                            s set to initial co
+                                                            unter - to match fr
+                                                            equency of 1 Hz)
+  168 000000BE F2C0 080A       MOVT             R8, #0xA    ; assign 0xA to hig
+                                                            her part R0
+  169 000000C2         loop
+  170 000000C2 F1B8 0801       SUBS             R8, #1      ; Decrement r0 and 
+                                                            set the N,Z,C statu
+                                                            s bits 
+  171 000000C6 D1FC            BNE              loop        ; Use BNE to set if
+                                                             content inside
+  172 000000C8 D0F2            BEQ              DELAY       ; This will be exec
+                                                            tued when R8, which
+                                                             is the register fo
+                                                            r delay, is equal t
+                                                            o 0, 
+  173 000000CA         ; it will go back to the start of delay, and check if th
+                       ere is more delay cycle to execute
+  174 000000CA         
+  175 000000CA         Return_Function
+  176 000000CA 4770            BX               LR          ; This is where the
+                                                             external return lo
+                                                            cates
+  177 000000CC         
+  178 000000CC         
+  179 000000CC         ;exitDelay  LDMFD  R13!,{R2, R15}
+  180 000000CC         
+  181 000000CC         ;
+  182 000000CC         ; Data used in the program
+  183 000000CC         ; DCB is Define Constant Byte size
+  184 000000CC         ; DCW is Define Constant Word (16-bit) size
+  185 000000CC         ; EQU is EQUate or assign a value.  This takes no memory
+                        but instead of typing the same address in many places o
+
+
+
+ARM Macro Assembler    Page 7 
+
+
+                       ne can just use an EQU
+  186 000000CC         ;
+  187 000000CC                 ALIGN                        ; make sure things 
+                                                            fall on word addres
+                                                            ses
+  188 000000CC         
+  189 000000CC         ; One way to provide a data to convert to Morse code is 
+                       to use a string in memory.
+  190 000000CC         ; Simply read bytes of the string until the NULL or "0" 
+                       is hit.  This makes it very easy to loop until done.
+  191 000000CC         ;
+  192 000000CC 52 4B 4D 
+              42 44 00 InputLUT
+                               DCB              "RKMBD", 0  ; strings must be s
+                                                            tored, and read, as
+                                                             BYTES
+  193 000000D2         
+  194 000000D2 00 00           ALIGN                        ; make sure things 
+                                                            fall on word addres
+                                                            ses
+  195 000000D4         MorseLUT
+  196 000000D4 17 00 D5 
+              01 5D 07 
+              75 00            DCW              0x17, 0x1D5, 0x75D, 0x75 
+                                                            ; A, B, C, D
+  197 000000DC 01 00 5D 
+              01 DD 01 
+              55 00            DCW              0x1, 0x15D, 0x1DD, 0x55 
+                                                            ; E, F, G, H
+  198 000000E4 05 00 77 
+              17 D7 01 
+              75 01            DCW              0x5, 0x1777, 0x1D7, 0x175 
+                                                            ; I, J, K, L
+  199 000000EC 77 00 1D 
+              00 77 07 
+              DD 05            DCW              0x77, 0x1D, 0x777, 0x5DD 
+                                                            ; M, N, O, P
+  200 000000F4 D7 1D 5D 
+              00 15 00 
+              07 00            DCW              0x1DD7, 0x5D, 0x15, 0x7 
+                                                            ; Q, R, S, T
+  201 000000FC 57 00 57 
+              01 77 01 
+              57 07            DCW              0x57, 0x157, 0x177, 0x757 
+                                                            ; U, V, W, X
+  202 00000104 77 1D 75 
+              07               DCW              0x1D77, 0x775 ; Y, Z
+  203 00000108         
+  204 00000108         ; One can also define an address using the EQUate direct
+                       ive
+  205 00000108         ;
+  206 00000108 2009C000 
+                       LED_PORT_ADR
+                               EQU              0x2009c000  ; Base address of t
+                                                            he memory that cont
+                                                            rols I/O like LEDs
+  207 00000108         
+  208 00000108                 END
+              00000000 
+
+
+
+ARM Macro Assembler    Page 8 
+
+
+              00000000 
+              00000000 
+              00000000 
+              00000000 
+              00000000 
+              00000000 
+Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M3 --apcs=interw
+ork --depend=.\objects\lab_2_program.d -o.\objects\lab_2_program.o -I.\RTE\_Tar
+get_1 -IC:\Keil_v5\ARM\PACK\Keil\LPC1700_DFP\2.7.1\Device\Include -IC:\Keil_v5\
+ARM\CMSIS\Include --predefine="__EVAL SETA 1" --predefine="__UVISION_VERSION SE
+TA 529" --predefine="LPC175x_6x SETA 1" --list=.\listings\lab_2_program.lst Lab
+_2_program.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+CHAR2MORSE 00000084
+
+Symbol: CHAR2MORSE
+   Definitions
+      At line 119 in file Lab_2_program.s
+   Uses
+      At line 59 in file Lab_2_program.s
+Comment: CHAR2MORSE used once
+DELAY 000000B0
+
+Symbol: DELAY
+   Definitions
+      At line 160 in file Lab_2_program.s
+   Uses
+      At line 34 in file Lab_2_program.s
+      At line 47 in file Lab_2_program.s
+      At line 56 in file Lab_2_program.s
+      At line 78 in file Lab_2_program.s
+      At line 172 in file Lab_2_program.s
+
+InputLUT 000000CC
+
+Symbol: InputLUT
+   Definitions
+      At line 192 in file Lab_2_program.s
+   Uses
+      At line 36 in file Lab_2_program.s
+Comment: InputLUT used once
+LED_OFF 000000A8
+
+Symbol: LED_OFF
+   Definitions
+      At line 149 in file Lab_2_program.s
+   Uses
+      At line 29 in file Lab_2_program.s
+      At line 43 in file Lab_2_program.s
+      At line 75 in file Lab_2_program.s
+
+LED_ON 0000009C
+
+Symbol: LED_ON
+   Definitions
+      At line 137 in file Lab_2_program.s
+   Uses
+      At line 74 in file Lab_2_program.s
+Comment: LED_ON used once
+LOOP_CHAR 0000006A
+
+Symbol: LOOP_CHAR
+   Definitions
+      At line 71 in file Lab_2_program.s
+   Uses
+      At line 80 in file Lab_2_program.s
+Comment: LOOP_CHAR used once
+MorseLUT 000000D4
+
+Symbol: MorseLUT
+   Definitions
+      At line 195 in file Lab_2_program.s
+
+
+
+ARM Macro Assembler    Page 2 Alphabetic symbol ordering
+Relocatable symbols
+
+   Uses
+      At line 121 in file Lab_2_program.s
+Comment: MorseLUT used once
+My_code 00000000
+
+Symbol: My_code
+   Definitions
+      At line 7 in file Lab_2_program.s
+   Uses
+      None
+Comment: My_code unused
+NextChar 00000036
+
+Symbol: NextChar
+   Definitions
+      At line 40 in file Lab_2_program.s
+   Uses
+      At line 81 in file Lab_2_program.s
+Comment: NextChar used once
+ProcessChar 00000066
+
+Symbol: ProcessChar
+   Definitions
+      At line 59 in file Lab_2_program.s
+   Uses
+      At line 53 in file Lab_2_program.s
+Comment: ProcessChar used once
+ResetLUT 0000001E
+
+Symbol: ResetLUT
+   Definitions
+      At line 25 in file Lab_2_program.s
+   Uses
+      At line 57 in file Lab_2_program.s
+Comment: ResetLUT used once
+Return_CARRY 00000074
+
+Symbol: Return_CARRY
+   Definitions
+      At line 76 in file Lab_2_program.s
+   Uses
+      At line 73 in file Lab_2_program.s
+Comment: Return_CARRY used once
+Return_Function 000000CA
+
+Symbol: Return_Function
+   Definitions
+      At line 175 in file Lab_2_program.s
+   Uses
+      At line 163 in file Lab_2_program.s
+Comment: Return_Function used once
+Return_LED_CHAR 00000042
+
+Symbol: Return_LED_CHAR
+   Definitions
+      At line 44 in file Lab_2_program.s
+   Uses
+      At line 42 in file Lab_2_program.s
+Comment: Return_LED_CHAR used once
+
+
+
+ARM Macro Assembler    Page 3 Alphabetic symbol ordering
+Relocatable symbols
+
+Return_LED_RESET 0000002A
+
+Symbol: Return_LED_RESET
+   Definitions
+      At line 30 in file Lab_2_program.s
+   Uses
+      At line 28 in file Lab_2_program.s
+Comment: Return_LED_RESET used once
+Return_Next 0000004C
+
+Symbol: Return_Next
+   Definitions
+      At line 48 in file Lab_2_program.s
+   Uses
+      At line 46 in file Lab_2_program.s
+Comment: Return_Next used once
+Return_Reset 00000034
+
+Symbol: Return_Reset
+   Definitions
+      At line 35 in file Lab_2_program.s
+   Uses
+      At line 33 in file Lab_2_program.s
+Comment: Return_Reset used once
+__MAIN 00000000
+
+Symbol: __MAIN
+   Definitions
+      At line 10 in file Lab_2_program.s
+   Uses
+      At line 8 in file Lab_2_program.s
+Comment: __MAIN used once
+loop 000000C2
+
+Symbol: loop
+   Definitions
+      At line 169 in file Lab_2_program.s
+   Uses
+      At line 171 in file Lab_2_program.s
+Comment: loop used once
+19 symbols
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Absolute symbols
+
+LED_PORT_ADR 2009C000
+
+Symbol: LED_PORT_ADR
+   Definitions
+      At line 206 in file Lab_2_program.s
+   Uses
+      None
+Comment: LED_PORT_ADR unused
+1 symbol
+355 symbols in table

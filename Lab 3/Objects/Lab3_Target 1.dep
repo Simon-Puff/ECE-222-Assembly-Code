@@ -1,0 +1,4 @@
+Dependencies for Project 'Lab3', Target 'Target 1': (DO NOT MODIFY !)
+CompilerVersion: 5060750::V5.06 update 6 (build 750)::ARMCC
+F (N:\Lab0 -222\startup_LPC17xx.s)(0x65A92A41)(--cpu Cortex-M3 --pd "__EVAL SETA 1" -g --apcs=interwork -I.\RTE\_Target_1-IC:\Keil_v5\ARM\PACK\Keil\LPC1700_DFP\2.7.1\Device\Include-IC:\Keil_v5\ARM\CMSIS\Include--pd "__UVISION_VERSION SETA 529" --pd "LPC175x_6x SETA 1"--list .\listings\startup_lpc17xx.lst --xref -o .\objects\startup_lpc17xx.o --depend .\objects\startup_lpc17xx.d)
+F (.\Lab_3_program.s)(0x65FF87F5)(--cpu Cortex-M3 --pd "__EVAL SETA 1" -g --apcs=interwork -I.\RTE\_Target_1-IC:\Keil_v5\ARM\PACK\Keil\LPC1700_DFP\2.7.1\Device\Include-IC:\Keil_v5\ARM\CMSIS\Include--pd "__UVISION_VERSION SETA 529" --pd "LPC175x_6x SETA 1"--list .\listings\lab_3_program.lst --xref -o .\objects\lab_3_program.o --depend .\objects\lab_3_program.d)
